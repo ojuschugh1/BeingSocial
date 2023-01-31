@@ -1,18 +1,28 @@
-import * as actionType from '../constants/actionTypes';
+import jwt from "jsonwebtoken";
 
-const authReducer = (state = { authData: null }, action) => {
-  switch (action.type) {
-    case actionType.AUTH:
-      localStorage.setItem('profile', JSON.stringify({ ...action?.data }));
+const secret = 'test';
 
-      return { ...state, authData: action.data, loading: false, errors: null };
-    case actionType.LOGOUT:
-      localStorage.clear();
+const auth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const isCustomAuth = token.length < 500;
 
-      return { ...state, authData: null, loading: false, errors: null };
-    default:
-      return state;
+    let decodedData;
+
+    if (token && isCustomAuth) {      
+      decodedData = jwt.verify(token, secret);
+
+      req.userId = decodedData?.id;
+    } else {
+      decodedData = jwt.decode(token);
+
+      req.userId = decodedData?.sub;
+    }    
+
+    next();
+  } catch (error) {
+    console.log(error);
   }
 };
 
-export default authReducer;
+export default auth;
